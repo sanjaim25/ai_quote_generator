@@ -1,0 +1,416 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ topic }} &mdash; Quotient</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<style>
+  .result-shell {
+    min-height: 100vh;
+    padding: 48px 24px 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── Top nav ── */
+  .topbar {
+    width: min(860px, 100%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 52px;
+    animation: fadeDown .6s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .topbar-brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 400;
+    color: #ffffff;            /* FIXED: pure white */
+    text-decoration: none;
+    letter-spacing: -.3px;
+  }
+
+  .topbar-brand em {
+    font-style: italic;
+    color: #e0d3b8;            /* FIXED: brighter warm gold */
+  }
+
+  /* Only ONE set of actions in the topbar — just "New Topic" */
+  .topbar-back {
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.60);   /* FIXED: was .55 */
+    border: 1px solid rgba(255,255,255,.20);  /* FIXED: stronger */
+    background: transparent;
+    padding: 9px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: color .2s, border-color .2s, background .2s, transform .18s;
+  }
+
+  .topbar-back:hover {
+    color: #ffffff;
+    border-color: rgba(255,255,255,.35);
+    background: rgba(255,255,255,.05);
+    transform: translateY(-1px);
+  }
+
+  /* ── Page header ── */
+  .result-header {
+    width: min(860px, 100%);
+    margin-bottom: 40px;
+    animation: riseIn .7s cubic-bezier(.22,1,.36,1) .08s both;
+  }
+
+  .result-eyebrow {
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #d4c9b0;            /* FIXED: fully opaque warm gold */
+    margin-bottom: 10px;
+  }
+
+  .result-heading {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(36px, 5vw, 60px);
+    font-weight: 300;
+    line-height: 1.05;
+    letter-spacing: -.5px;
+    color: #ffffff;            /* FIXED: pure white */
+    margin: 0 0 16px;
+  }
+
+  .result-heading em {
+    font-style: italic;
+    color: #e0d3b8;            /* FIXED: brighter warm gold */
+  }
+
+  .result-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .meta-pill {
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.55);  /* FIXED: was .35 */
+    border: 1px solid rgba(255,255,255,.18);  /* FIXED: was .09 */
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
+
+  /* ── Section rule ── */
+  .section-rule {
+    width: min(860px, 100%);
+    height: 1px;
+    background: linear-gradient(90deg,
+      rgba(212,201,176,.40) 0%,
+      rgba(212,201,176,.12) 60%,
+      transparent 100%);
+    margin-bottom: 32px;
+    animation: riseIn .6s cubic-bezier(.22,1,.36,1) .12s both;
+  }
+
+  /* ── Quote grid ── */
+  .quotes-grid {
+    width: min(860px, 100%);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  /* ── Individual quote row ── */
+  .quote-item {
+    position: relative;
+    padding: 28px 36px;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    gap: 20px;
+    align-items: start;
+    cursor: default;
+    transition: background .22s;
+    animation: riseIn .65s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .quote-item:first-child { border-top: 1px solid rgba(255,255,255,.07); }
+
+  .quote-item:hover { background: rgba(255,255,255,.03); }
+
+  /* Index number */
+  .quote-index {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    font-style: italic;
+    color: rgba(212,201,176,.55);  /* FIXED: was .40 */
+    padding-top: 3px;
+    user-select: none;
+    text-align: right;
+  }
+
+  /* Quote body */
+  .quote-body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .quote-body::before {
+    content: '\201C';
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 48px;
+    line-height: .6;
+    color: rgba(212,201,176,.28);  /* FIXED: was .18 */
+    display: block;
+    margin-bottom: 6px;
+    user-select: none;
+  }
+
+  .quoteText {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: clamp(18px, 2.2vw, 22px);
+    line-height: 1.55;
+    color: rgba(255,255,255,.90);  /* FIXED: was .88 — now .90 */
+    margin: 0;
+    letter-spacing: .1px;
+  }
+
+  /* Copy button — reveals on hover */
+  .copy-btn {
+    opacity: 0;
+    transition: opacity .18s, transform .18s, color .18s, border-color .18s;
+    border: 1px solid rgba(255,255,255,.14);  /* FIXED: was .10 */
+    background: transparent;
+    color: rgba(255,255,255,.55);  /* FIXED: was .45 */
+    border-radius: 4px;
+    padding: 7px 12px;
+    font-size: 10px;
+    font-family: 'Jost', sans-serif;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    white-space: nowrap;
+    margin-top: 4px;
+  }
+
+  .quote-item:hover .copy-btn { opacity: 1; }
+
+  .copy-btn:hover {
+    border-color: rgba(212,201,176,.50);
+    color: #e0d3b8;
+    transform: translateY(-1px);
+  }
+
+  /* ── SINGLE bottom action bar (removed duplicate from topbar) ── */
+  .action-bar {
+    width: min(860px, 100%);
+    margin-top: 48px;
+    padding-top: 28px;
+    border-top: 1px solid rgba(255,255,255,.10);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    animation: riseIn .7s cubic-bezier(.22,1,.36,1) .3s both;
+  }
+
+  .action-bar-brand {
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.35);  /* FIXED: was .22 */
+  }
+
+  .action-bar-right {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Shared button styles ── */
+  .btn-outline {
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.65);  /* FIXED: was .55 */
+    border: 1px solid rgba(255,255,255,.20);  /* FIXED: was .12 */
+    background: transparent;
+    padding: 9px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: color .2s, border-color .2s, background .2s, transform .18s;
+  }
+
+  .btn-outline:hover {
+    color: #ffffff;
+    border-color: rgba(255,255,255,.40);
+    background: rgba(255,255,255,.05);
+    transform: translateY(-1px);
+  }
+
+  .btn-solid {
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #0c0c0b;
+    background: #f0ebe0;
+    border: 1px solid #f0ebe0;
+    padding: 9px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background .2s, border-color .2s, transform .18s;
+  }
+
+  .btn-solid:hover {
+    background: #d4c9b0;
+    border-color: #d4c9b0;
+    transform: translateY(-1px);
+  }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: #f0ebe0;
+    color: #0c0c0b;
+    font-family: 'Jost', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    padding: 9px 22px;
+    border-radius: 999px;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    transition: opacity .22s, transform .22s;
+    white-space: nowrap;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── Animations ── */
+  @keyframes riseIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  {% for q in quotes %}
+  .quote-item:nth-child({{ loop.index }}) { animation-delay: {{ 0.1 + loop.index * 0.06 }}s; }
+  {% endfor %}
+
+  /* ── Mobile ── */
+  @media (max-width: 600px) {
+    .result-shell { padding: 28px 16px 48px; }
+    .quote-item {
+      grid-template-columns: 28px 1fr;
+      padding: 20px 16px;
+    }
+    /* hide copy btn column on mobile — always show it */
+    .copy-btn { opacity: 1; grid-column: 2; }
+    .action-bar { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+
+<body>
+<main class="result-shell">
+
+  <!-- Top nav: brand + back only. No duplicate buttons. -->
+  <nav class="topbar">
+    <a href="/" class="topbar-brand">Quot<em>ient</em></a>
+    <a href="/" class="topbar-back">&larr; New Topic</a>
+  </nav>
+
+  <!-- Page header -->
+  <header class="result-header">
+    <p class="result-eyebrow">Generated Quotes</p>
+    <h1 class="result-heading">On <em>{{ topic }}</em></h1>
+    <div class="result-meta">
+      <span class="meta-pill">{{ quotes | length }} quotes</span>
+      <span class="meta-pill">Powered by Ollama</span>
+    </div>
+  </header>
+
+  <!-- Divider -->
+  <div class="section-rule"></div>
+
+  <!-- Quotes list -->
+  <section class="quotes-grid" data-quotes-grid aria-label="Generated quotes">
+    {% for q in quotes %}
+    <article class="quote-item" data-quote>
+      <span class="quote-index" aria-hidden="true">{{ "%02d" | format(loop.index) }}</span>
+      <div class="quote-body">
+        <p class="quoteText">{{ q }}</p>
+      </div>
+      <button class="copy-btn" data-copy-one title="Copy quote" aria-label="Copy quote {{ loop.index }}">
+        Copy
+      </button>
+    </article>
+    {% endfor %}
+  </section>
+
+  <!-- Single action bar at bottom -->
+  <div class="action-bar">
+    <span class="action-bar-brand">Quotient &mdash; AI &middot; Language &middot; Meaning</span>
+    <div class="action-bar-right">
+      <button class="btn-outline" data-share-all>Share All</button>
+      <button class="btn-outline" data-copy-all>Copy All</button>
+      <button class="btn-solid" data-download>Download .txt</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- Toast notification -->
+<div class="toast" data-toast><span data-toast-text>Copied</span></div>
+
+<script>window.__TOPIC__ = {{ topic | tojson }};</script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
